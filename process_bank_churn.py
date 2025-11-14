@@ -243,7 +243,31 @@ def transform_new_data(
     df_final = pd.concat([df.drop(columns=categorical_cols), encoded_df], axis=1)
     return df_final
 
+def evaluate_model(pipeline, X, dataset_name='Dataset'):
+    # 1. Прогноз ймовірностей
+    y_proba = pipeline.predict_proba(X)[:, 1]
 
+    # 2. Прогноз класів при порозі 0.5
+    y_pred = (y_proba >= 0.5).astype(int)
+
+    # 3. Confusion Matrix
+    cm = confusion_matrix(X['Exited'], y_pred)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+    disp.plot()
+    plt.title(f'Confusion Matrix: {dataset_name}')
+    plt.show()
+
+    # 4. ROC Curve
+    fpr, tpr, _ = roc_curve(X['Exited'], y_proba)
+    RocCurveDisplay(fpr=fpr, tpr=tpr).plot()
+    plt.title(f'ROC Curve: {dataset_name}')
+    plt.show()
+
+    # 5. Метрики
+    auc = roc_auc_score(X['Exited'], y_proba)
+    f1 = f1_score(X['Exited'], y_pred)
+
+    print(f"📊 {dataset_name} — AUROC: {auc:.3f}, F1 Score (threshold=0.5): {f1:.3f}")
 # -------------------- ТЕСТОВИЙ ЗАПУСК --------------------
 if __name__ == "__main__":
     csv_path = "train.csv"
