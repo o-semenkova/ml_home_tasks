@@ -1,7 +1,3 @@
-# ================================================================
-# ЧИСТИЙ ПРЕПРОЦЕС БЕЗ DATA LEAKAGE
-# ================================================================
-
 import os
 from typing import Dict, Any, List, Optional
 import pandas as pd
@@ -142,7 +138,7 @@ def preprocess_data(
         joblib.dump(scaler, f"{save_dir}/scaler.joblib")
     joblib.dump(encoder, f"{save_dir}/encoder.joblib")
 
-    print("✅ Препроцес завершено без leakage")
+    print("✅ Препроцес завершено")
 
     return {
         'train_X': X_train,
