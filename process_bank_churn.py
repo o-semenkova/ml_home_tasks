@@ -180,3 +180,38 @@ def transform_new_data(new_df: pd.DataFrame,
 
     df = pd.concat([df.drop(columns=categorical_cols), encoded], axis=1)
     return df
+
+# -------------------- ОЦІНКА МОДЕЛІ --------------------
+
+def evaluate_model_from_proba(y_true, y_proba, dataset_name='Dataset'):
+    """
+    Оцінює модель за готовими true labels та predicted probabilities.
+
+    Args:
+        y_true (array-like): Реальні значення цільової змінної (0/1).
+        y_proba (array-like): Прогнозовані ймовірності класу 1.
+        dataset_name (str): Назва датасету для підписів графіків.
+    """
+
+    # 1. Перетворення порогу 0.5 на класи
+    y_pred = (y_proba >= 0.5).astype(int)
+
+    # 2. Confusion Matrix
+    cm = confusion_matrix(y_true, y_pred)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+    disp.plot()
+    plt.title(f'Confusion Matrix: {dataset_name}')
+    plt.show()
+
+    # 3. ROC Curve
+    fpr, tpr, _ = roc_curve(y_true, y_proba)
+    RocCurveDisplay(fpr=fpr, tpr=tpr).plot()
+    plt.title(f'ROC Curve: {dataset_name}')
+    plt.show()
+
+    # 4. Метрики
+    auc = roc_auc_score(y_true, y_proba)
+    f1 = f1_score(y_true, y_pred)
+
+    print(f"📊 {dataset_name} — AUROC: {auc:.3f}, F1 Score (threshold=0.5): {f1:.3f}")
+
