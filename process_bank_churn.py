@@ -9,6 +9,12 @@ from sklearn.metrics import (
     roc_curve, RocCurveDisplay,
     roc_auc_score, f1_score
 )
+
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.tree import DecisionTreeClassifier
+
 import matplotlib.pyplot as plt
 
 
@@ -248,3 +254,52 @@ def evaluate_model_from_proba(y_true, y_proba, dataset_name='Dataset'):
 
     print(f"📊 {dataset_name} — AUROC: {auc:.3f}, F1 Score (threshold=0.5): {f1:.3f}")
 
+    #----------------------- Для Pipeline ----------------------------------------------------
+
+
+    # --- 1) Кастомний трансформер: видалити технічні колонки + додати ProductGroup
+class AddFeaturesDropTech(BaseEstimator, TransformerMixin):
+    def __init__(self, technical_columns=None):
+        self.technical_columns = technical_columns or ['id', 'CustomerId', 'Surname']
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        X = X.copy()
+
+        # 1) drop технічних колонок
+        X = X.drop(columns=list(self.technical_columns), errors='ignore')
+
+        # 2) додати ProductGroup (з NumOfProducts)
+        def simplify_products(n):
+            if n == 1:
+                return "1"
+            elif n == 2:
+                return "2"
+            else:
+                return "3"
+
+        if "NumOfProducts" in X.columns:
+            X["ProductGroup"] = X["NumOfProducts"].apply(simplify_products)
+
+        return X
+
+def build_pipeline(numeric_cols, categorical_cols, technical_columns=None, random_state=42):
+    # Препроцесинг колонок (робиться всередині pipeline)
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ("num", MinMaxScaler(), list(numeric_cols)),
+            ("cat", OneHotEncoder(handle_unknown="ignore"), list(categorical_cols)),
+        ],
+        remainder="drop",
+        verbose_feature_names_out=False,
+    )
+
+    pipe = Pipeline(steps=[
+        ("features", AddFeaturesDropTech(technical_columns=technical_columns)),
+        ("preprocess", preprocessor),
+        ("model", DecisionTreeClassifier(random_state=random_state)),
+    ])
+
+    return pipe
